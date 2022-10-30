@@ -38,5 +38,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass.set("com.antondukeman.automatedtranscoding.AppKt")
+    mainClass.set("com.antondukeman.transcoding.AppKt")
 }
