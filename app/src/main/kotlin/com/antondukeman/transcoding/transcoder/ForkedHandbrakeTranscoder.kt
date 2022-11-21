@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.io.path.createTempDirectory
 
-class ScriptedHandbrakeTranscoder(
+class ForkedHandbrakeTranscoder(
         val transcodeExecutablePath: Path,
         val copyBeforeHandbrake: Boolean
 ) : Transcoder {

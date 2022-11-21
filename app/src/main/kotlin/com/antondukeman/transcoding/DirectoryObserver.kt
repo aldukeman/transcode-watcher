@@ -9,9 +9,10 @@ import java.nio.file.WatchEvent
 import java.nio.file.WatchKey
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.*
+import com.antondukeman.transcoding.pathprocessor.PathProcessor
 
 // Watch the directory at root path for new files in the tree
-class DirectoryObserver(val rootPath: Path) {
+class DirectoryObserver(val rootPath: Path, val processor: PathProcessor) {
     private val watcherService = FileSystems.getDefault().newWatchService()
     private val keys = hashMapOf<WatchKey, Path>()
 
@@ -19,10 +20,10 @@ class DirectoryObserver(val rootPath: Path) {
 
     // Start observing the directory tree and execute callback with path relative to root when new
     // files are found
-    fun startObserving(callback: (path: Path) -> Unit) {
+    fun startObserving() {
         val relativeCallback: (Path) -> Unit = { path -> 
             val relativePath = rootPath.relativize(path)
-            callback(relativePath)
+            processor.process(relativePath)
         }
         walkAndRegisterDirectories(rootPath)
         pushFileChanges(relativeCallback)
@@ -30,7 +31,7 @@ class DirectoryObserver(val rootPath: Path) {
         while (true) {
             var key: WatchKey?
             try {
-                key = watcherService.poll(12, TimeUnit.SECONDS)
+                key = watcherService.poll(15, TimeUnit.SECONDS)
             } catch (x: InterruptedException) {
                 System.err.println("Can't take " + x)
                 return
@@ -44,7 +45,6 @@ class DirectoryObserver(val rootPath: Path) {
                 }
                 processWatchKey(key, dir)
             } else {
-                System.out.println("Pushing changes")
                 pushFileChanges(relativeCallback)
             }
         }

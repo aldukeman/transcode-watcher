@@ -1,21 +1,19 @@
 package com.antondukeman.transcoding
 
-import com.antondukeman.transcoding.transcoder.ScriptedHandbrakeTranscoder
+import com.antondukeman.transcoding.transcoder.ForkedHandbrakeTranscoder
 import com.antondukeman.transcoding.pathprocessor.TranscodingPathProcessor
 import java.nio.file.Path
 import kotlin.io.path.*
 
 class App(val originalPath: Path, val processedPath: Path, val transcodeExecutablePath: Path) {
     fun start() {
-        var transcoder = ScriptedHandbrakeTranscoder(transcodeExecutablePath, true)
+        var transcoder = ForkedHandbrakeTranscoder(transcodeExecutablePath, true)
         transcoder.startTranscodeVideoThread()
 
         var pathProcessor = TranscodingPathProcessor(".mkv", originalPath, processedPath, transcoder)
 
-        val observer = DirectoryObserver(originalPath)
-        observer.startObserving {
-            pathProcessor.process(it)
-        }
+        val observer = DirectoryObserver(originalPath, pathProcessor)
+        observer.startObserving()
     }
 }
 
