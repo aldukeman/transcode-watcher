@@ -2,13 +2,11 @@ package com.antondukeman.transcoding.transcoder
 
 import java.io.IOException
 import java.nio.file.Path
-import java.nio.file.attribute.PosixFilePermission
-import java.nio.file.attribute.PosixFilePermissions
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import java.security.InvalidParameterException
 import kotlin.concurrent.thread
-import kotlin.io.path.createTempDirectory
 
 class ForkedHandbrakeTranscoder(
         val transcodeExecutablePath: Path,
@@ -44,14 +42,26 @@ class ForkedHandbrakeTranscoder(
         try {
             val process = startTranscodeProcess(input, output)
             System.out.println("Done with " + output.toString() + " exited: " + process.waitFor())
-        } catch (x: IOException) {
+        } catch (x: Exception) {
             System.out.println("Failed to execute transcode: " + x)
             Thread.sleep(10 * 1000L) // a very short simulation of the transcoding activity
         }
     }
 
     private fun startTranscodeProcess(input: Path, output: Path): Process {
-        val cmd = generateCommand(input, output)
+        val cmd: Array<String>
+        val inputPathStr = input.toString()
+        if(inputPathStr.contains("dvd")) {
+            cmd = generateDvdCommand(input, output)
+        } else if(inputPathStr.contains("bluray_tv")) {
+            cmd = generateBlurayTvCommand(input, output)
+        } else if(inputPathStr.contains("bluray_movie")) {
+            cmd = generateBlurayMovieCommand(input, output)
+        } else if(inputPathStr.contains("uhd")) {
+            cmd = generateUhdMovieCommand(input, output)
+        } else {
+            throw IllegalArgumentException("Unknown processing type " + inputPathStr)
+        }
         System.out.println(cmd.joinToString(" "))
 
         return ProcessBuilder(cmd.asList())
@@ -60,19 +70,95 @@ class ForkedHandbrakeTranscoder(
                 .start()
     }
 
-    private fun generateCommand(input: Path, output: Path): Array<String> {
+    private fun generateDvdCommand(input: Path, output: Path): Array<String> {
         var transcodeArr = arrayOf(transcodeExecutablePath.toString())
         transcodeArr += arrayOf("--input", input.toString())
         transcodeArr += arrayOf("--output", output.toString())
         transcodeArr += arrayOf("--markers") // add chapter markers
-        transcodeArr += arrayOf("--encoder", "vt_h265_10bit")
+
+        transcodeArr += arrayOf("--encoder", "vt_h265")
+        transcodeArr += arrayOf("--vb", "2000") // video bitrate in kbps
+
         transcodeArr += arrayOf("--audio-lang-list", "eng")
         transcodeArr += arrayOf("--first-audio")
         transcodeArr += arrayOf("--aencoder", "copy") // choose the best audio and pass it through
-        transcodeArr += arrayOf("--auto-anamorphic")
+        transcodeArr += arrayOf("--audio-copy-mask", "truehd,dtshd,dts")
+
         transcodeArr += arrayOf("--subtitle-lang-list", "eng")
-        transcodeArr += arrayOf("--subtitle", "scan,1")
-        transcodeArr += arrayOf("--subtitle-forced=scan") // only include the scan subtitle if forced flag is set
+        // only include the scan subtitle if forced flag is set
+        transcodeArr += arrayOf("--subtitle-forced=scan")
+
+        transcodeArr += arrayOf("--verbose")
+
+        return transcodeArr
+    }
+
+    private fun generateBlurayTvCommand(input: Path, output: Path): Array<String> {
+        var transcodeArr = arrayOf(transcodeExecutablePath.toString())
+        transcodeArr += arrayOf("--input", input.toString())
+        transcodeArr += arrayOf("--output", output.toString())
+        transcodeArr += arrayOf("--markers") // add chapter markers
+
+        transcodeArr += arrayOf("--encoder", "vt_h265")
+        transcodeArr += arrayOf("--vb", "4000") // video bitrate in kbps
+
+        transcodeArr += arrayOf("--audio-lang-list", "eng")
+        transcodeArr += arrayOf("--first-audio")
+        transcodeArr += arrayOf("--aencoder", "copy") // choose the best audio and pass it through
+        transcodeArr += arrayOf("--audio-copy-mask", "truehd,dtshd,dts")
+
+        transcodeArr += arrayOf("--subtitle-lang-list", "eng")
+        // only include the scan subtitle if forced flag is set
+        transcodeArr += arrayOf("--subtitle-forced=scan")
+
+        transcodeArr += arrayOf("--verbose")
+
+        return transcodeArr
+    }
+
+    private fun generateBlurayMovieCommand(input: Path, output: Path): Array<String> {
+        var transcodeArr = arrayOf(transcodeExecutablePath.toString())
+        transcodeArr += arrayOf("--input", input.toString())
+        transcodeArr += arrayOf("--output", output.toString())
+        transcodeArr += arrayOf("--markers") // add chapter markers
+
+        transcodeArr += arrayOf("--encoder", "vt_h265")
+        transcodeArr += arrayOf("--vb", "6000") // video bitrate in kbps
+        // transcodeArr += arrayOf("--two-pass")
+
+        transcodeArr += arrayOf("--audio-lang-list", "eng")
+        transcodeArr += arrayOf("--first-audio")
+        transcodeArr += arrayOf("--aencoder", "copy") // choose the best audio and pass it through
+        transcodeArr += arrayOf("--audio-copy-mask", "truehd,dtshd,dts")
+
+        transcodeArr += arrayOf("--subtitle-lang-list", "eng")
+        // only include the scan subtitle if forced flag is set
+        transcodeArr += arrayOf("--subtitle-forced=scan")
+
+        transcodeArr += arrayOf("--verbose")
+
+        return transcodeArr
+    }
+
+    private fun generateUhdMovieCommand(input: Path, output: Path): Array<String> {
+        var transcodeArr = arrayOf(transcodeExecutablePath.toString())
+        transcodeArr += arrayOf("--input", input.toString())
+        transcodeArr += arrayOf("--output", output.toString())
+        transcodeArr += arrayOf("--markers") // add chapter markers
+
+        transcodeArr += arrayOf("--encoder", "vt_h265_10bit")
+        transcodeArr += arrayOf("--vb", "12000") // video bitrate in kbps
+
+        transcodeArr += arrayOf("--audio-lang-list", "eng")
+        transcodeArr += arrayOf("--first-audio")
+        transcodeArr += arrayOf("--aencoder", "copy") // choose the best audio and pass it through
+        transcodeArr += arrayOf("--audio-copy-mask", "truehd,dtshd,dts")
+
+        transcodeArr += arrayOf("--subtitle-lang-list", "eng")
+        // only include the scan subtitle if forced flag is set
+        transcodeArr += arrayOf("--subtitle-forced=scan")
+
+        transcodeArr += arrayOf("--verbose")
 
         return transcodeArr
     }

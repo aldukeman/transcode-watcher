@@ -40,3 +40,16 @@ application {
     // Define the main class for the application.
     mainClass.set("com.antondukeman.transcoding.AppKt")
 }
+
+tasks.create("FatJar", Jar::class) {
+    group = "build"
+    description = "Creates a self-contained fat JAR of the application that can be run."
+    manifest.attributes["Main-Class"] = "com.antondukeman.transcoding.AppKt"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    val dependencies = configurations
+        .runtimeClasspath
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    with(tasks.jar.get())
+}

@@ -12,17 +12,19 @@ class TranscodingPathProcessor(
         val transcoder: Transcoder
 ) : PathProcessor {
     override fun process(path: Path) {
-        if (path.toString().endsWith(fileExtension, true)) {
-            val sourceFile = sourceRoot.resolve(path)
-            val outputFile = outputRoot.resolve(path)
-
-            try {
-                Files.createDirectories(outputFile.parent)
-            } catch (x: FileAlreadyExistsException) {
-                // expected
-            }
-
-            transcoder.process(sourceFile, outputFile)
+        if (!path.toString().endsWith(fileExtension, true)) {
+            return
         }
+
+        val sourceFile = sourceRoot.resolve(path)
+        val outputFile = outputRoot.resolve(path)
+
+        try {
+            Files.createDirectories(outputFile.parent)
+        } catch (x: FileAlreadyExistsException) {
+            // expected
+        }
+
+        transcoder.process(sourceFile, outputFile)
     }
 }

@@ -26,10 +26,16 @@ fun main(args: Array<String>) {
         rootPathString = "/Users/aldukeman/dev/transcoding_testing"
     }
 
+    val transcodeExecutablePath: Path
+    if(args.size >= 2) {
+        transcodeExecutablePath = Path(args[1])
+    } else {
+        transcodeExecutablePath = Path("/Users/aldukeman/scripts/HandBrakeCLI")
+    }
+
     val rootPath = Path(rootPathString)
     val originalPath = rootPath.resolve("original")
     val processedPath = rootPath.resolve("processed")
-    val transcodeExecutablePath = Path("/Users/aldukeman/scripts/HandBrakeCLI")
 
     val app = App(originalPath, processedPath, transcodeExecutablePath)
     app.start()
